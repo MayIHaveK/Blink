@@ -18,16 +18,17 @@ package priv.seventeen.artist.blink.command
 import org.bukkit.Bukkit
 import org.bukkit.command.CommandMap
 import org.bukkit.plugin.java.JavaPlugin
-import java.lang.invoke.MethodHandles
-import java.lang.invoke.MethodType
 
 object BlinkCommandRegistrar {
 
     private val commandMap: CommandMap by lazy {
-        val lookup = MethodHandles.lookup()
-        val serverClass = Bukkit.getServer().javaClass
-        val handle = lookup.findVirtual(serverClass, "getCommandMap", MethodType.methodType(CommandMap::class.java))
-        handle.invoke(Bukkit.getServer()) as CommandMap
+        val server = Bukkit.getServer()
+        // 沿类继承链查找 getCommandMap，兼容 Arclight 等混合端
+        val method = generateSequence<Class<*>>(server.javaClass) { it.superclass }
+            .flatMap { it.declaredMethods.asSequence() }
+            .first { it.name == "getCommandMap" && it.parameterCount == 0 }
+            .apply { isAccessible = true }
+        method.invoke(server) as CommandMap
     }
 
     fun register(plugin: JavaPlugin, command: BlinkCommand, fallbackPrefix: String = plugin.description.name) {
