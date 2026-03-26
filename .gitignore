@@ -1,0 +1,7 @@
+/.kotlin/
+/.idea/
+/.gradle/
+/test-plugin/build/
+/test-plugin/.gradle/
+/blink-gradle-plugin/build/
+/blink-common/build/
