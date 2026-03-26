@@ -31,6 +31,7 @@ import java.util.logging.Level
 abstract class BlinkConfig(val plugin: JavaPlugin, pathName: String) {
 
     val pathName: String = if (pathName.replace('\\', '/').endsWith(".yml")) pathName.replace('\\', '/') else "${pathName.replace('\\', '/')}.yml"
+    @Ignore
     var configFile: File = File(plugin.dataFolder, this.pathName); private set
 
     fun load() {
