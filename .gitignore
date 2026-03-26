@@ -5,3 +5,5 @@
 /test-plugin/.gradle/
 /blink-gradle-plugin/build/
 /blink-common/build/
+.narrafork/
+.worktrees/
