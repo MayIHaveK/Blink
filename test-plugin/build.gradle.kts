@@ -134,3 +134,7 @@ dependencies {
 kotlin {
     jvmToolchain(17)
 }
+
+tasks.named("build") {
+    dependsOn("shadowJar")
+}
