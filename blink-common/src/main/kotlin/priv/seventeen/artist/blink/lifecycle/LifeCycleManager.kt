@@ -15,9 +15,8 @@
  */
 package priv.seventeen.artist.blink.lifecycle
 
-import priv.seventeen.artist.blink.bukkitPlugin
+import priv.seventeen.artist.blink.BlinkLog
 import java.util.*
-import java.util.logging.Level
 
 object LifeCycleManager {
 
@@ -44,11 +43,7 @@ object LifeCycleManager {
             try {
                 handler.action.run()
             } catch (e: Throwable) {
-                bukkitPlugin.logger.log(
-                    Level.WARNING,
-                    "[Blink] @Awake(${lifeCycle.name}) ${handler.name} 执行出错",
-                    e
-                )
+                BlinkLog.error("@Awake(${lifeCycle.name}) ${handler.name} 执行出错", e)
             }
         }
     }

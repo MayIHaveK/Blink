@@ -30,6 +30,7 @@ class BytecodeGenerator(private val targetPkg: String) {
         private const val LIFECYCLE_ENUM = "priv/seventeen/artist/blink/lifecycle/LifeCycle"
         private const val EVENT_MANAGER = "priv/seventeen/artist/blink/event/EventManager"
         private const val SCRIPT_MANAGER = "priv/seventeen/artist/blink/script/ScriptManager"
+        private const val ARIA_SCRIPT_MANAGER = "priv/seventeen/artist/blink/script/AriaScriptManager"
         private const val DEP_LOADER = "priv/seventeen/artist/blink/loader/DependencyLoader"
 
         private const val JAVA_PLUGIN = "org/bukkit/plugin/java/JavaPlugin"
@@ -40,15 +41,15 @@ class BytecodeGenerator(private val targetPkg: String) {
         private const val SCHEDULER = "org/bukkit/scheduler/BukkitScheduler"
     }
 
-    fun generateMainClass(enableScript: Boolean): ByteArray {
+    fun generateMainClass(enableScript: Boolean, enableAria: Boolean): ByteArray {
         val cw = ClassWriter(ClassWriter.COMPUTE_FRAMES or ClassWriter.COMPUTE_MAXS)
         val mainClass = "$targetPkg/BlinkGeneratedMain"
 
         cw.visit(V17, ACC_PUBLIC or ACC_SUPER, mainClass, null, JAVA_PLUGIN, null)
         generateConstructor(cw, JAVA_PLUGIN)
-        generateOnLoad(cw, mainClass, enableScript)
+        generateOnLoad(cw, mainClass, enableScript, enableAria)
         generateOnEnable(cw, mainClass)
-        generateOnDisable(cw, enableScript)
+        generateOnDisable(cw, enableScript, enableAria)
         cw.visitEnd()
         return cw.toByteArray()
     }
@@ -63,7 +64,7 @@ class BytecodeGenerator(private val targetPkg: String) {
         mv.visitEnd()
     }
 
-    private fun generateOnLoad(cw: ClassWriter, @Suppress("UNUSED_PARAMETER") mainClass: String, enableScript: Boolean) {
+    private fun generateOnLoad(cw: ClassWriter, @Suppress("UNUSED_PARAMETER") mainClass: String, enableScript: Boolean, enableAria: Boolean) {
         val mv = cw.visitMethod(ACC_PUBLIC, "onLoad", "()V", null, null)
         mv.visitCode()
 
@@ -86,6 +87,11 @@ class BytecodeGenerator(private val targetPkg: String) {
             mv.visitFieldInsn(GETSTATIC, SCRIPT_MANAGER, "INSTANCE", "L$SCRIPT_MANAGER;")
             mv.visitVarInsn(ALOAD, 1)
             mv.visitMethodInsn(INVOKEVIRTUAL, SCRIPT_MANAGER, "init", "(Ljava/util/List;)V", false)
+        }
+
+        if (enableAria) {
+            mv.visitFieldInsn(GETSTATIC, ARIA_SCRIPT_MANAGER, "INSTANCE", "L$ARIA_SCRIPT_MANAGER;")
+            mv.visitMethodInsn(INVOKEVIRTUAL, ARIA_SCRIPT_MANAGER, "init", "()V", false)
         }
 
         mv.visitMethodInsn(INVOKESTATIC, "$targetPkg/BlinkGeneratedLifeCycle", "registerAll", "()V", false)
@@ -153,7 +159,7 @@ class BytecodeGenerator(private val targetPkg: String) {
         lambdaMv.visitEnd()
     }
 
-    private fun generateOnDisable(cw: ClassWriter, enableScript: Boolean) {
+    private fun generateOnDisable(cw: ClassWriter, enableScript: Boolean, enableAria: Boolean) {
         val mv = cw.visitMethod(ACC_PUBLIC, "onDisable", "()V", null, null)
         mv.visitCode()
 
@@ -164,6 +170,11 @@ class BytecodeGenerator(private val targetPkg: String) {
         if (enableScript) {
             mv.visitFieldInsn(GETSTATIC, SCRIPT_MANAGER, "INSTANCE", "L$SCRIPT_MANAGER;")
             mv.visitMethodInsn(INVOKEVIRTUAL, SCRIPT_MANAGER, "shutdown", "()V", false)
+        }
+
+        if (enableAria) {
+            mv.visitFieldInsn(GETSTATIC, ARIA_SCRIPT_MANAGER, "INSTANCE", "L$ARIA_SCRIPT_MANAGER;")
+            mv.visitMethodInsn(INVOKEVIRTUAL, ARIA_SCRIPT_MANAGER, "shutdown", "()V", false)
         }
 
         mv.visitInsn(RETURN)

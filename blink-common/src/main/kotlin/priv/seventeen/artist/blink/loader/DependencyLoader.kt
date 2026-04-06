@@ -17,6 +17,7 @@ package priv.seventeen.artist.blink.loader
 
 import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.plugin.java.JavaPlugin
+import priv.seventeen.artist.blink.BlinkLog
 import sun.misc.Unsafe
 import java.io.File
 import java.lang.reflect.Method
@@ -24,7 +25,6 @@ import java.lang.invoke.MethodHandles
 import java.lang.invoke.MethodType
 import java.net.HttpURLConnection
 import java.net.URL
-import java.util.logging.Level
 
 object DependencyLoader {
 
@@ -32,6 +32,7 @@ object DependencyLoader {
     private const val READ_TIMEOUT = 30000
 
     private val DEFAULT_REPOSITORIES = listOf(
+        "https://repo.arcartx.com/repository/maven-public/",
         "https://maven.aliyun.com/repository/central",
         "https://repo1.maven.org/maven2",
         "https://repo.huaweicloud.com/repository/maven"
@@ -67,12 +68,12 @@ object DependencyLoader {
         return NASHORN_DEPENDENCIES.map { dep ->
             val file = File(libsDir, dep.fileName)
             if (!file.exists()) {
-                plugin.logger.info("[Blink] 正在下载 ${dep.group}:${dep.artifact}:${dep.version}...")
+                BlinkLog.info("正在下载 ${dep.group}:${dep.artifact}:${dep.version}...")
                 val ok = tryDownload(dep, repositories, file, plugin)
                 if (!ok) {
-                    plugin.logger.severe("[Blink] ${dep.fileName} 所有仓库均下载失败!")
+                    BlinkLog.error("${dep.fileName} 所有仓库均下载失败!")
                 }
-                if (ok) plugin.logger.info("[Blink] 下载完成: ${dep.fileName}")
+                if (ok) BlinkLog.success("下载完成: ${dep.fileName}")
             }
             file
         }.filter { it.exists() }
@@ -89,7 +90,7 @@ object DependencyLoader {
         for (dep in pluginDeps) {
             val file = File(libsDir, dep.fileName)
             if (file.exists()) {
-                plugin.logger.info("[Blink] ${dep.fileName} 已存在，直接加载")
+                BlinkLog.detail("${dep.fileName} 已存在，直接加载")
                 tryInject(classLoader, file, plugin)
                 continue
             }
@@ -103,22 +104,22 @@ object DependencyLoader {
     ) {
         val file = File(libsDir, dep.fileName)
         if (!file.exists()) {
-            plugin.logger.info("[Blink] 正在下载 ${dep.group}:${dep.artifact}:${dep.version}...")
+            BlinkLog.info("正在下载 ${dep.group}:${dep.artifact}:${dep.version}...")
             val ok = tryDownload(dep, repos, file, plugin)
             if (!ok) {
-                plugin.logger.severe("[Blink] ${dep.fileName} 所有仓库均下载失败!")
+                BlinkLog.error("${dep.fileName} 所有仓库均下载失败!")
                 return
             }
-            plugin.logger.info("[Blink] 下载完成: ${dep.fileName}")
+            BlinkLog.success("下载完成: ${dep.fileName}")
         }
         tryInject(classLoader, file, plugin)
     }
 
-    private fun tryInject(classLoader: ClassLoader, file: File, plugin: JavaPlugin) {
+    private fun tryInject(classLoader: ClassLoader, file: File, @Suppress("UNUSED_PARAMETER") plugin: JavaPlugin) {
         try {
             injectClasspath(classLoader, file)
         } catch (e: Exception) {
-            plugin.logger.log(Level.SEVERE, "[Blink] 注入 ${file.name} 失败", e)
+            BlinkLog.error("注入 ${file.name} 失败", e)
         }
     }
 
@@ -138,14 +139,14 @@ object DependencyLoader {
         for (notation in libs) {
             val parts = notation.split(":")
             if (parts.size != 3) {
-                plugin.logger.warning("[Blink] 无效的依赖声明: $notation (格式: group:artifact:version)")
+                BlinkLog.warn("无效的依赖声明: $notation (格式: group:artifact:version)")
                 continue
             }
             deps.add(Dependency(parts[0].trim(), parts[1].trim(), parts[2].trim()))
         }
 
         if (deps.isNotEmpty()) {
-            plugin.logger.info("[Blink] 从 plugin.yml 解析到 ${deps.size} 个依赖")
+            BlinkLog.info("从 plugin.yml 解析到 ${deps.size} 个依赖")
         }
         return deps
     }
@@ -157,16 +158,16 @@ object DependencyLoader {
         return yaml.getStringList("repositories").takeIf { it.isNotEmpty() } ?: DEFAULT_REPOSITORIES
     }
 
-    private fun tryDownload(dep: Dependency, repos: List<String>, target: File, plugin: JavaPlugin): Boolean {
+    private fun tryDownload(dep: Dependency, repos: List<String>, target: File, @Suppress("UNUSED_PARAMETER") plugin: JavaPlugin): Boolean {
         for (repo in repos) {
             val repoBase = repo.trimEnd('/')
             val url = "$repoBase/${dep.path}"
             try {
-                plugin.logger.info("[Blink]   尝试: $repoBase")
+                BlinkLog.detail("  尝试: $repoBase")
                 downloadFile(url, target)
                 return true
             } catch (e: Exception) {
-                plugin.logger.warning("[Blink]   $repoBase 失败: ${e.message}")
+                BlinkLog.warn("  $repoBase 失败: ${e.message}")
             }
         }
         return false

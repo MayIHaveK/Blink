@@ -32,7 +32,6 @@ object BlinkCommandRegistrar {
     }
 
     fun register(plugin: JavaPlugin, command: BlinkCommand, fallbackPrefix: String = plugin.description.name) {
-        command.logger = plugin.logger
         commandMap.register(fallbackPrefix, command)
     }
 }

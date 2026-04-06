@@ -20,8 +20,7 @@ import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
 import org.bukkit.command.ConsoleCommandSender
 import org.bukkit.entity.Player
-import java.util.logging.Level
-import java.util.logging.Logger
+import priv.seventeen.artist.blink.BlinkLog
 
 class BlinkCommand(name: String, vararg aliases: String)
     : Command(name, "", "/$name", aliases.toList()) {
@@ -31,7 +30,6 @@ class BlinkCommand(name: String, vararg aliases: String)
     internal val rootCommands = linkedMapOf<String, ResolvedCommand>()
     private val rootNameMap = hashMapOf<String, String>()
     private val tabProviders = hashMapOf<String, () -> Collection<String>>()
-    internal var logger: Logger? = null
 
     fun group(g: BlinkCommandGroup): BlinkCommand {
         groups[g.groupName] = g; groupNameMap[g.groupName.lowercase()] = g.groupName; return this
@@ -81,7 +79,7 @@ class BlinkCommand(name: String, vararg aliases: String)
             cmd.execute(CommandContext(sender, label, args))
         } catch (e: Throwable) {
             sender.sendMessage("§c命令执行出错")
-            logger?.log(Level.WARNING, "[Blink] /$label 出错", e)
+            BlinkLog.error("/$label 出错", e)
         }
         return true
     }

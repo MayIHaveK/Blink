@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     compileOnly("org.spigotmc:spigot-api:1.20.4-R0.1-SNAPSHOT")
+    compileOnly("priv.seventeen.artist.aria:aria:${property("ariaVersion")}")
 }
 
 tasks.withType<JavaCompile> {
