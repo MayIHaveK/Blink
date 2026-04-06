@@ -18,6 +18,7 @@ package priv.seventeen.artist.blink.config
 import org.bukkit.configuration.ConfigurationSection
 import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.plugin.java.JavaPlugin
+import priv.seventeen.artist.blink.BlinkLog
 import java.io.File
 import java.lang.invoke.MethodHandle
 import java.lang.invoke.MethodHandles
@@ -26,7 +27,6 @@ import java.lang.reflect.Modifier
 import java.lang.reflect.ParameterizedType
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
-import java.util.logging.Level
 
 abstract class BlinkConfig(val plugin: JavaPlugin, pathName: String) {
 
@@ -47,14 +47,14 @@ abstract class BlinkConfig(val plugin: JavaPlugin, pathName: String) {
 
     fun reload() {
         try { loadFields(this, YamlConfiguration.loadConfiguration(configFile)) }
-        catch (e: Exception) { plugin.logger.log(Level.WARNING, "[Blink] 加载配置 $pathName 失败", e) }
+        catch (e: Exception) { BlinkLog.error("加载配置 $pathName 失败", e) }
     }
 
     fun save() {
         try {
             val sb = StringBuilder(); writeObj(this, sb, 0)
             Files.newBufferedWriter(configFile.toPath(), StandardCharsets.UTF_8).use { it.write(sb.toString()) }
-        } catch (e: Exception) { plugin.logger.log(Level.WARNING, "[Blink] 保存配置 $pathName 失败", e) }
+        } catch (e: Exception) { BlinkLog.error("保存配置 $pathName 失败", e) }
     }
 
     private fun getFieldValue(getter: MethodHandle, field: Field, target: Any): Any? {
@@ -78,7 +78,7 @@ abstract class BlinkConfig(val plugin: JavaPlugin, pathName: String) {
                 if (cur is BlinkSection) { section.getConfigurationSection(key)?.let { loadFields(cur, it) }; continue }
                 if (cur is MutableMap<*, *> && isMapOfSection(field)) { loadSectionMap(target, field, key, section); continue }
                 loadPrimitive(target, setter, field, key, section, cur)
-            } catch (e: Exception) { plugin.logger.log(Level.WARNING, "[Blink] 字段 $pathName.$key 失败", e) }
+            } catch (e: Exception) { BlinkLog.error("字段 $pathName.$key 失败", e) }
         }
     }
 
@@ -118,7 +118,7 @@ abstract class BlinkConfig(val plugin: JavaPlugin, pathName: String) {
     private fun writeDefaults() {
         val sb = StringBuilder(); writeObj(this, sb, 0)
         try { Files.newBufferedWriter(configFile.toPath(), StandardCharsets.UTF_8).use { it.write(sb.toString()) } }
-        catch (e: Exception) { plugin.logger.log(Level.WARNING, "[Blink] 写入默认配置 $pathName 失败", e) }
+        catch (e: Exception) { BlinkLog.error("写入默认配置 $pathName 失败", e) }
     }
 
     private fun writeObj(target: Any, sb: StringBuilder, indent: Int) {

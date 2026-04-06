@@ -39,12 +39,29 @@ class BlinkPlugin : Plugin<Project> {
                 config.exclude(mapOf("group" to "org.jetbrains", "module" to "annotations"))
             }
 
+            if (extension.enableAria.get()) {
+                configureAria(project)
+            }
+
             configureCodeGeneration(project, extension)
             configureShadow(project, extension)
 
             if (extension.obfuscate.get()) {
                 configureProteus(project, extension)
             }
+        }
+    }
+
+    private fun configureAria(project: Project) {
+        val ariaVersion = project.findProperty("ariaVersion")?.toString() ?: "1.0.1"
+        val depNotation = "priv.seventeen.artist.aria:aria:$ariaVersion"
+        // compileOnly: 编译时可用，运行时由 DependencyLoader 自动下载注入
+        val compileOnly = project.configurations.findByName("compileOnly")
+        if (compileOnly != null) {
+            project.dependencies.add("compileOnly", depNotation)
+            project.logger.lifecycle("[Blink] Aria 脚本引擎已添加 (compileOnly): $depNotation")
+        } else {
+            project.logger.warn("[Blink] 未找到 compileOnly 配置，无法添加 Aria 依赖")
         }
     }
 
@@ -74,6 +91,8 @@ class BlinkPlugin : Plugin<Project> {
             task.softDepend.set(extension.softDepend)
             task.libraries.set(extension.libraries)
             task.enableScript.set(extension.enableScript)
+            task.enableAria.set(extension.enableAria)
+            task.ariaVersion.set(project.findProperty("ariaVersion")?.toString() ?: "1.0.1")
             task.foliaSupported.set(extension.foliaSupported)
             task.packageName.set(extension.packageName)
         }
@@ -94,6 +113,7 @@ class BlinkPlugin : Plugin<Project> {
                     val pkgName = extension.packageName.get().ifEmpty { project.group.toString() }
                     if (pkgName.isNotEmpty()) {
                         relocateMethod.invoke(task, "priv.seventeen.artist.blink", "$pkgName.blink")
+                        // Aria 不再 relocate，运行时由 DependencyLoader 独立下载注入
                     }
                 } catch (_: Exception) {
                     project.logger.warn("[Blink] 配置 Shadow relocate 失败，请手动配置")

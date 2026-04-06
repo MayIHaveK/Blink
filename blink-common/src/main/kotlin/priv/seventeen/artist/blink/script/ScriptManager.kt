@@ -15,11 +15,11 @@
  */
 package priv.seventeen.artist.blink.script
 
+import priv.seventeen.artist.blink.BlinkLog
 import priv.seventeen.artist.blink.bukkitPlugin
 import java.io.File
 import java.net.URLClassLoader
 import java.util.*
-import java.util.logging.Level
 import javax.script.ScriptEngine
 import javax.script.ScriptEngineFactory
 
@@ -32,7 +32,7 @@ object ScriptManager {
 
     fun init(nashornJars: List<File>) {
         if (nashornJars.isEmpty()) {
-            bukkitPlugin.logger.warning("[Blink] Nashorn JAR 文件为空，JS 引擎不可用")
+            BlinkLog.warn("Nashorn JAR 文件为空，JS 引擎不可用")
             return
         }
 
@@ -45,12 +45,12 @@ object ScriptManager {
         }
 
         if (nashornFactory == null) {
-            bukkitPlugin.logger.warning("[Blink] 未找到 Nashorn 引擎，JS 功能不可用")
+            BlinkLog.warn("未找到 Nashorn 引擎，JS 功能不可用")
             return
         }
 
         defaultEngine = nashornFactory.scriptEngine
-        bukkitPlugin.logger.info("[Blink] JS 引擎已初始化: ${nashornFactory.engineName} ${nashornFactory.engineVersion}")
+        BlinkLog.success("JS 引擎已初始化: ${nashornFactory.engineName} ${nashornFactory.engineVersion}")
     }
 
     val isAvailable: Boolean get() = defaultEngine != null
@@ -85,7 +85,7 @@ object ScriptManager {
         try {
             engineClassLoader?.close()
         } catch (e: Exception) {
-            bukkitPlugin.logger.log(Level.WARNING, "[Blink] 关闭 JS 引擎 ClassLoader 时出错", e)
+            BlinkLog.error("关闭 JS 引擎 ClassLoader 时出错", e)
         }
         engineClassLoader = null
     }

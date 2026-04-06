@@ -16,8 +16,8 @@
 package priv.seventeen.artist.blink.config
 
 import org.bukkit.plugin.java.JavaPlugin
+import priv.seventeen.artist.blink.BlinkLog
 import java.io.File
-import java.util.logging.Level
 
 abstract class BlinkConfigFolder<T : BlinkConfig>(private val plugin: JavaPlugin, folderName: String) {
 
@@ -41,7 +41,7 @@ abstract class BlinkConfigFolder<T : BlinkConfig>(private val plugin: JavaPlugin
             if (!path.endsWith(".yml")) continue
             val id = path.removeSuffix(".yml").replace(File.separatorChar, '/')
             try { val c = createConfig(plugin, folderName + path); c.load(); configs[id] = c }
-            catch (e: Exception) { plugin.logger.log(Level.WARNING, "[Blink] 加载 $folderName$path 失败", e) }
+            catch (e: Exception) { BlinkLog.error("加载 $folderName$path 失败", e) }
         }
     }
 

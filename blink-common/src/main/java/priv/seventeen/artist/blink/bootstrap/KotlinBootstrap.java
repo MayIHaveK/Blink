@@ -15,6 +15,7 @@
  */
 package priv.seventeen.artist.blink.bootstrap;
 
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import sun.misc.Unsafe;
@@ -36,6 +37,7 @@ import java.util.logging.Level;
 
 public final class KotlinBootstrap {
 
+    private static final String PREFIX = "\u00A79\u25C6 \u00A7bBlink \u00A78| ";
     private static final String DEFAULT_KOTLIN_VERSION = "1.8.22";
     private static final int CONNECT_TIMEOUT = 5000;
     private static final int READ_TIMEOUT = 30000;
@@ -53,7 +55,7 @@ public final class KotlinBootstrap {
 
         int[] envVersion = detectKotlinVersion(classLoader);
         if (envVersion != null) {
-            plugin.getLogger().info("[Blink] Kotlin " + envVersion[0] + "." + envVersion[1] + "." + envVersion[2]
+            logInfo("Kotlin " + envVersion[0] + "." + envVersion[1] + "." + envVersion[2]
                     + " detected in environment, skipping download");
             ensureReflectAndAnnotations(plugin, classLoader, envVersion);
             return;
@@ -87,24 +89,25 @@ public final class KotlinBootstrap {
         for (String[] dep : kotlinDeps) {
             String group = dep[0], artifact = dep[1], version = dep[2];
             if (isClassAvailable(classForArtifact(artifact), classLoader)) {
-                plugin.getLogger().info("[Blink] " + artifact + " already available, skipping");
+                logDetail(artifact + " already available, skipping");
                 continue;
             }
             String fileName = artifact + "-" + version + ".jar";
             File file = new File(libsDir, fileName);
             if (!file.exists()) {
-                plugin.getLogger().info("[Blink] Downloading " + group + ":" + artifact + ":" + version + "...");
+                logInfo("Downloading " + group + ":" + artifact + ":" + version + "...");
                 boolean ok = tryDownload(group, artifact, version, repositories, file, plugin);
                 if (!ok) {
-                    plugin.getLogger().severe("[Blink] " + fileName + " download failed from all repositories!");
+                    logError(fileName + " download failed from all repositories!");
                     continue;
                 }
-                plugin.getLogger().info("[Blink] Downloaded: " + fileName);
+                logSuccess("Downloaded: " + fileName);
             }
             try {
                 injectClasspath(classLoader, file);
             } catch (Throwable e) {
-                plugin.getLogger().log(Level.SEVERE, "[Blink] Failed to inject " + file.getName(), e);
+                logError("Failed to inject " + file.getName());
+                plugin.getLogger().log(Level.SEVERE, "", e);
             }
         }
     }
@@ -153,17 +156,18 @@ public final class KotlinBootstrap {
             String fileName = artifact + "-" + version + ".jar";
             File file = new File(libsDir, fileName);
             if (!file.exists()) {
-                plugin.getLogger().info("[Blink] Downloading " + group + ":" + artifact + ":" + version + "...");
+                logInfo("Downloading " + group + ":" + artifact + ":" + version + "...");
                 boolean ok = tryDownload(group, artifact, version, repositories, file, plugin);
                 if (!ok) {
-                    plugin.getLogger().severe("[Blink] " + fileName + " download failed!");
+                    logError(fileName + " download failed!");
                     continue;
                 }
             }
             try {
                 injectClasspath(classLoader, file);
             } catch (Throwable e) {
-                plugin.getLogger().log(Level.SEVERE, "[Blink] Failed to inject " + file.getName(), e);
+                logError("Failed to inject " + file.getName());
+                plugin.getLogger().log(Level.SEVERE, "", e);
             }
         }
     }
@@ -197,11 +201,11 @@ public final class KotlinBootstrap {
             String repoBase = repo.endsWith("/") ? repo.substring(0, repo.length() - 1) : repo;
             String url = repoBase + "/" + path;
             try {
-                plugin.getLogger().info("[Blink]   Trying: " + repoBase);
+                logDetail("  Trying: " + repoBase);
                 downloadFile(url, target);
                 return true;
             } catch (Exception e) {
-                plugin.getLogger().warning("[Blink]   " + repoBase + " failed: " + e.getMessage());
+                logWarn("  " + repoBase + " failed: " + e.getMessage());
             }
         }
         return false;
@@ -312,5 +316,30 @@ public final class KotlinBootstrap {
         Field f = Unsafe.class.getDeclaredField("theUnsafe");
         f.setAccessible(true);
         return (Unsafe) f.get(null);
+    }
+
+    // ==================== 控制台彩色日志 ====================
+
+    /** 输出普通信息（白色） */
+    private static void logInfo(String message) { log("\u00A7f", message); }
+
+    /** 输出成功信息（绿色） */
+    private static void logSuccess(String message) { log("\u00A7a", message); }
+
+    /** 输出警告信息（黄色） */
+    private static void logWarn(String message) { log("\u00A7e", message); }
+
+    /** 输出错误信息（红色） */
+    private static void logError(String message) { log("\u00A7c", message); }
+
+    /** 输出次要信息（灰色） */
+    private static void logDetail(String message) { log("\u00A77", message); }
+
+    private static void log(String color, String message) {
+        try {
+            Bukkit.getConsoleSender().sendMessage(PREFIX + color + message);
+        } catch (Exception e) {
+            System.out.println("[Blink] " + message);
+        }
     }
 }
